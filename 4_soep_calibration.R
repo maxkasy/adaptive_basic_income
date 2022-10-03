@@ -1,6 +1,11 @@
 library(tidyverse)
 library(patchwork)
 
+# Flags for running parts of the calibration
+fit_model = F
+plot_fit = F
+evaluate_thompson = T
+
 source("1_maximum_likelihood_MCMC_labor_exponential.R")
 source("2_labor_supply_simulate_functions.R")
 
@@ -32,57 +37,62 @@ log_posterior = function(par_vector){
 
 
 # Run calibration
-if (F){
+if (fit_model){
     metropolis_master(soep_data, dim_x, start_value)
-    MCMC_diagnostics()
+    # MCMC_diagnostics()
+} else {
+    load("Data_processed/sampled_chains.RDat")
+    use_chain = combine_chains(chains, 2000, 5000)
 }
 
 # Simulate data from calibrated values ----
-
-par = estimates$Bayes[1:dim_par] |> 
-    par_vector_to_list()
-
-sim_data = simulate_sample(x = x_soep, par = par, n_per_policy = 4000)
-sim_data |>
-    filter(y < 5000) |>
-    counterfactual_plots(filename = "Figures/soep_simulated_plots.png")
-
-# Compare simulated and actual data
-
-
-baseline_sim_data = sim_data |> 
-    filter(y < 5000, w==1, y0==0) 
-
-baseline_soep_data = soep_data |>
-    filter(y < 5000) 
-
-p1 = baseline_sim_data |> 
-    ggplot(aes(x=y)) + geom_histogram(bins = 20) +
-    theme_minimal() + labs(title = "Calibrated")
-
-p2 = baseline_soep_data |> 
-    ggplot(aes(x=y)) + geom_histogram(bins = 20) +
-    theme_minimal() + labs(title = "SOEP")
-
-ggsave("Figures/data_vs_calibration.png", 
-       p1 / p2, width = 5, height = 8)
-
-summary(baseline_sim_data$y)
-summary(baseline_soep_data$y)
+if (plot_fit) {
+    par = estimates$Bayes[1:dim_par] |> 
+        par_vector_to_list()
+    
+    par$gamma_eta[[1]] = -2 # adjusting eta parameter for sensible participation frequency.
+    
+    sim_data = simulate_sample(x = x_soep, par = par, n_per_policy = 4000)
+    sim_data |>
+        filter(y < 5000) |>
+        counterfactual_plots(filename = "Figures/soep_simulated_plots.png")
+    
+    # Compare simulated and actual data
+    baseline_sim_data = sim_data |> 
+        filter(y < 5000, w==1, y0==0) 
+    
+    baseline_soep_data = soep_data |>
+        filter(y < 5000) 
+    
+    p1 = baseline_sim_data |> 
+        ggplot(aes(x=y)) + geom_histogram(bins = 20) +
+        theme_minimal() + labs(title = "Calibrated")
+    
+    p2 = baseline_soep_data |> 
+        ggplot(aes(x=y)) + geom_histogram(bins = 20) +
+        theme_minimal() + labs(title = "SOEP")
+    
+    ggsave("Figures/data_vs_calibration.png", 
+           p1 / p2, width = 5, height = 8)
+    
+    summary(baseline_sim_data$y)
+    summary(baseline_soep_data$y)
+}
 
 # Counterfactual welfare, based on estimates ----
-welfare =
-    estimates |> 
-    slice(1:dim_par) |>
-    pull(Bayes) |> 
-    par_vector_to_list() |> 
-    counterfactual_welfare(x = x_soep) |> 
-    arrange(regret)
-
-print(welfare)
-
-load("Data_processed/sampled_chains.RDat")
-use_chain <<- combine_chains(chains, 2000, 5000)
-plan(multisession, workers = 8)
-p = thompson_probabilities(x_soep, use_chain, 200)
-print(p)
+if (evaluate_thompson){
+    par = estimates$Bayes[1:dim_par] |> 
+        par_vector_to_list()
+    
+    par$gamma_eta[[1]] = -2 # adjusting eta parameter for sensible participation frequency.
+    
+    welfare = par |> 
+        counterfactual_welfare(x = x_soep) |> 
+        arrange(regret)
+    
+    print(welfare)
+    
+    plan(multisession, workers = 8)
+    p = thompson_probabilities(x_soep, use_chain, 400)
+    print(p)
+}

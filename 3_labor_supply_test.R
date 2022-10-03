@@ -22,7 +22,7 @@ sim_random = simulate_sample(x = x, par = true_par, n_per_policy = 200)
 
 sim_random |>
     filter(y <5000) |>
-    counterfactual_plots(filename = "test_plots.png")
+    counterfactual_plots(filename = "Figures/test_plots.png")
 
 
 metropolis_master(sim_random, dim_x, start_value)

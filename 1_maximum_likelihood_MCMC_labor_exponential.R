@@ -187,8 +187,8 @@ metropolis_master = function(data, dim_x,
         optim(start_value,
               log_posterior,
               method = "Nelder-Mead",# "L-BFGS-B",
-              control=list(fnscale=-1,
-                           maxit = 100)#, maximum iterations for debugging. drop later.
+              control=list(fnscale=-1)#,
+                           # maxit = 100)#, maximum iterations for debugging. drop later.
               # hessian = T,
               # lower = c(c(0.001,0.001,0.00005,0.001), rep(-Inf,  dim_par - 4))
               )
@@ -226,6 +226,7 @@ metropolis_master = function(data, dim_x,
                        ~ MASS::mvrnorm(n = 1, 
                                        mu = starting_value_MCMC,
                                        Sigma = Sigma) )
+
     # Catch for starting values with -Inf log prior
     for (i in 1:no_chains) {
         if (log_posterior(start_values[[i]]) == -Inf) browser()

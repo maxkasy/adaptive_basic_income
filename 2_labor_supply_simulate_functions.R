@@ -10,14 +10,14 @@ sim_policies =
            w = c(1, rep(seq(.2, .8, by = .3), each = 3)))
 
 # Covariate distribution from SOEP
-x_soep = read_csv("../labor_supply/Data_processed/covariates_SOEP.csv") |>
+x_soep = read_csv("Data_processed/covariates_SOEP.csv") |>
     as.matrix()
 n_soep = nrow(x_soep)
 
 
 # Normative parameters for counterfactual welfare
-welfare_exponent = .7 # smaller value means more egalitarian preferences
-break_even_u = 1500 # value of u where marginal individual euro is worth same as for funds
+welfare_exponent = .4 # smaller value means more egalitarian preferences
+break_even_u = 1800 # value of u where marginal individual euro is worth same as for funds
 value_of_funds = welfare_exponent * break_even_u^(welfare_exponent-1) # value of a marginal euro, in units of u^welfare_exponent
 
 
